@@ -8,47 +8,8 @@ import {
   inspect as emberInspect
 } from "ember-metal/utils";
 
-import Cache from "ember-metal/cache";
-
 var STRING_DASHERIZE_REGEXP = (/[ _]/g);
-
-var STRING_DASHERIZE_CACHE = new Cache(1000, function(key) {
-  return decamelize(key).replace(STRING_DASHERIZE_REGEXP, '-');
-});
-
-var CAMELIZE_CACHE = new Cache(1000, function(key) {
-  return key.replace(STRING_CAMELIZE_REGEXP, function(match, separator, chr) {
-    return chr ? chr.toUpperCase() : '';
-  }).replace(/^([A-Z])/, function(match, separator, chr) {
-    return match.toLowerCase();
-  });
-});
-
-var CLASSIFY_CACHE = new Cache(1000, function(str) {
-  var parts = str.split("."),
-  out = [];
-
-  for (var i=0, l=parts.length; i<l; i++) {
-    var camelized = camelize(parts[i]);
-    out.push(camelized.charAt(0).toUpperCase() + camelized.substr(1));
-  }
-
-  return out.join(".");
-});
-
-var UNDERSCORE_CACHE = new Cache(1000, function(str) {
-  return str.replace(STRING_UNDERSCORE_REGEXP_1, '$1_$2').
-    replace(STRING_UNDERSCORE_REGEXP_2, '_').toLowerCase();
-});
-
-var CAPITALIZE_CACHE = new Cache(1000, function(str) {
-  return str.charAt(0).toUpperCase() + str.substr(1);
-});
-
-var DECAMELIZE_CACHE = new Cache(1000, function(str) {
-  return str.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
-});
-
+var STRING_DASHERIZE_CACHE = {};
 var STRING_DECAMELIZE_REGEXP = (/([a-z\d])([A-Z])/g);
 var STRING_CAMELIZE_REGEXP = (/(\-|_|\.|\s)+(.)?/g);
 var STRING_UNDERSCORE_REGEXP_1 = (/([a-z\d])([A-Z]+)/g);
@@ -82,27 +43,51 @@ function w(str) {
 }
 
 function decamelize(str) {
-  return DECAMELIZE_CACHE.get(str);
+  return str.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
 }
 
 function dasherize(str) {
-  return STRING_DASHERIZE_CACHE.get(str);
+  var cache = STRING_DASHERIZE_CACHE,
+      hit   = cache.hasOwnProperty(str),
+      ret;
+
+  if (hit) {
+    return cache[str];
+  } else {
+    ret = decamelize(str).replace(STRING_DASHERIZE_REGEXP,'-');
+    cache[str] = ret;
+  }
+
+  return ret;
 }
 
 function camelize(str) {
-  return CAMELIZE_CACHE.get(str);
+  return str.replace(STRING_CAMELIZE_REGEXP, function(match, separator, chr) {
+    return chr ? chr.toUpperCase() : '';
+  }).replace(/^([A-Z])/, function(match, separator, chr) {
+    return match.toLowerCase();
+  });
 }
 
 function classify(str) {
-  return CLASSIFY_CACHE.get(str);
+  var parts = str.split("."),
+      out = [];
+
+  for (var i=0, l=parts.length; i<l; i++) {
+    var camelized = camelize(parts[i]);
+    out.push(camelized.charAt(0).toUpperCase() + camelized.substr(1));
+  }
+
+  return out.join(".");
 }
 
 function underscore(str) {
-  return UNDERSCORE_CACHE.get(str);
+  return str.replace(STRING_UNDERSCORE_REGEXP_1, '$1_$2').
+    replace(STRING_UNDERSCORE_REGEXP_2, '_').toLowerCase();
 }
 
 function capitalize(str) {
-  return CAPITALIZE_CACHE.get(str);
+  return str.charAt(0).toUpperCase() + str.substr(1);
 }
 
 /**
